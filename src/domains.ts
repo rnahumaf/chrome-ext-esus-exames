@@ -3,6 +3,7 @@ import { getStore, isAllowedOrigin, updateStore } from './storage';
 
 const SCRIPT_PREFIX = 'esus_presets_';
 export const INJECTED_SCRIPT_FILE = 'esus-injected.js';
+export const PAGE_BRIDGE_SCRIPT_FILE = 'esus-page-bridge.js';
 const registrationTasks = new Map<string, Promise<void>>();
 
 export function originPattern(origin: string): string {
@@ -30,23 +31,42 @@ async function withRegistrationLock(id: string, task: () => Promise<void>): Prom
   }
 }
 
-export async function registerOrigin(origin: string): Promise<void> {
+export function pageBridgeScriptIdForOrigin(origin: string): string {
+  return `${scriptIdForOrigin(origin)}_main`;
+}
+
+function registrationDefinitions(origin: string) {
   const matches = [originPattern(origin)];
-  const id = scriptIdForOrigin(origin);
-  await withRegistrationLock(id, async () => {
-    const current = await browser.scripting.getRegisteredContentScripts({ ids: [id] });
-    if (current.length) return;
-    await browser.scripting.registerContentScripts([
-      {
-        id,
-        js: [INJECTED_SCRIPT_FILE],
-        matches,
-        runAt: 'document_idle',
-        persistAcrossSessions: true,
-        world: 'ISOLATED',
-      },
-    ]);
-  });
+  return [
+    {
+      id: scriptIdForOrigin(origin),
+      js: [INJECTED_SCRIPT_FILE],
+      matches,
+      runAt: 'document_idle' as const,
+      persistAcrossSessions: true,
+      world: 'ISOLATED' as const,
+    },
+    {
+      id: pageBridgeScriptIdForOrigin(origin),
+      js: [PAGE_BRIDGE_SCRIPT_FILE],
+      matches,
+      runAt: 'document_idle' as const,
+      persistAcrossSessions: true,
+      world: 'MAIN' as const,
+    },
+  ];
+}
+
+export async function registerOrigin(origin: string): Promise<void> {
+  await Promise.all(
+    registrationDefinitions(origin).map((definition) =>
+      withRegistrationLock(definition.id, async () => {
+        const current = await browser.scripting.getRegisteredContentScripts({ ids: [definition.id] });
+        if (current.length) return;
+        await browser.scripting.registerContentScripts([definition]);
+      }),
+    ),
+  );
 }
 
 export async function activateOrigin(origin: string): Promise<void> {
@@ -58,11 +78,15 @@ export async function activateOrigin(origin: string): Promise<void> {
 }
 
 export async function removeOrigin(origin: string): Promise<void> {
-  const id = scriptIdForOrigin(origin);
-  await withRegistrationLock(id, async () => {
-    const registered = await browser.scripting.getRegisteredContentScripts({ ids: [id] });
-    if (registered.length) await browser.scripting.unregisterContentScripts({ ids: [id] });
-  });
+  const ids = registrationDefinitions(origin).map((definition) => definition.id);
+  await Promise.all(
+    ids.map((id) =>
+      withRegistrationLock(id, async () => {
+        const registered = await browser.scripting.getRegisteredContentScripts({ ids: [id] });
+        if (registered.length) await browser.scripting.unregisterContentScripts({ ids: [id] });
+      }),
+    ),
+  );
   await updateStore((store) => ({
     ...store,
     allowedOrigins: store.allowedOrigins.filter((item) => item !== origin),
@@ -74,7 +98,7 @@ export async function reconcileOrigins(): Promise<void> {
   const store = await getStore();
   const registered = await browser.scripting.getRegisteredContentScripts();
   const ours = registered.filter((script) => script.id.startsWith(SCRIPT_PREFIX));
-  const wantedIds = new Set(store.allowedOrigins.map(scriptIdForOrigin));
+  const wantedIds = new Set(store.allowedOrigins.flatMap((origin) => registrationDefinitions(origin).map(({ id }) => id)));
   const stale = ours.filter((script) => !wantedIds.has(script.id)).map((script) => script.id);
   if (stale.length) await browser.scripting.unregisterContentScripts({ ids: stale });
 

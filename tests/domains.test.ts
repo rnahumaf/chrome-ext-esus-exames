@@ -1,6 +1,11 @@
 import { browser } from 'wxt/browser';
 import { describe, expect, it, vi } from 'vitest';
-import { originPattern, registerOrigin, scriptIdForOrigin } from '../src/domains';
+import {
+  originPattern,
+  pageBridgeScriptIdForOrigin,
+  registerOrigin,
+  scriptIdForOrigin,
+} from '../src/domains';
 
 describe('domínios configuráveis', () => {
   it('gera padrão e identificador estável por origem', () => {
@@ -8,6 +13,7 @@ describe('domínios configuráveis', () => {
     expect(originPattern(origin)).toBe(`${origin}/*`);
     expect(scriptIdForOrigin(origin)).toBe(scriptIdForOrigin(origin));
     expect(scriptIdForOrigin(origin)).not.toBe(scriptIdForOrigin('https://outro.example'));
+    expect(pageBridgeScriptIdForOrigin(origin)).toBe(`${scriptIdForOrigin(origin)}_main`);
   });
 
   it('recusa origens não HTTPS', () => {
@@ -33,6 +39,9 @@ describe('domínios configuráveis', () => {
 
     const origin = 'https://esus.jaguariuna.sp.gov.br';
     await expect(Promise.all([registerOrigin(origin), registerOrigin(origin)])).resolves.toEqual([undefined, undefined]);
-    expect(register).toHaveBeenCalledTimes(1);
+    expect(register).toHaveBeenCalledTimes(2);
+    expect(registered).toEqual(
+      new Set([scriptIdForOrigin(origin), pageBridgeScriptIdForOrigin(origin)]),
+    );
   });
 });

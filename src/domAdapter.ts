@@ -1,4 +1,5 @@
 import type { ApplyResult, ExamItem } from './types';
+import { PAGE_SELECT_EXAM_EVENT } from './bridgeProtocol';
 
 const CODE_PATTERN = /\b(\d{10})\b/;
 const SELECTED_PATTERN = /^(.+?)\s+-\s+(\d{10})$/;
@@ -146,6 +147,13 @@ function dispatchPrimaryPointer(target: HTMLElement): void {
   }
 }
 
+function confirmOptionInPageWorld(option: HTMLElement, code: string): void {
+  dispatchPrimaryPointer(option);
+  if (option.isConnected) {
+    document.dispatchEvent(new CustomEvent(PAGE_SELECT_EXAM_EVENT, { detail: code }));
+  }
+}
+
 async function findOption(
   dialog: HTMLElement,
   item: ExamItem,
@@ -195,7 +203,7 @@ export async function addExam(
     }
   }
 
-  dispatchPrimaryPointer(option);
+  confirmOptionInPageWorld(option, item.sigtapCode);
   try {
     await waitFor(() => selectedCodes(dialog).has(item.sigtapCode), 4_500, signal);
     return { item, status: 'added' };

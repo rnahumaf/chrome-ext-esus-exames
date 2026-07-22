@@ -63,6 +63,7 @@ Para criar um grupo, selecione os exames pelo fluxo normal do e-SUS e clique em 
 - Não há analytics, telemetria, sincronização em nuvem nem código remoto.
 - A extensão solicita acesso apenas aos domínios HTTPS ativados explicitamente pelo usuário.
 - A integração usa o DOM visível e não acessa APIs internas, estado React ou GraphQL do e-SUS.
+- A interface e o armazenamento executam em mundo isolado. Uma ponte mínima no mundo da página recebe somente um código SIGTAP e confirma o clique na opção correspondente, sem ler dados clínicos.
 
 ## Critérios clínicos
 

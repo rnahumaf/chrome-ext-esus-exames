@@ -7,6 +7,7 @@ import {
   normalizeText,
   removeExam,
 } from '../src/domAdapter';
+import { PAGE_SELECT_EXAM_EVENT } from '../src/bridgeProtocol';
 
 function fixture() {
   document.body.innerHTML = `
@@ -59,14 +60,16 @@ describe('adaptador semântico do e-SUS', () => {
       const option = document.createElement('div');
       option.setAttribute('role', 'option');
       option.textContent = 'Hemograma completo Código 0202020380';
-      option.addEventListener('mousedown', () => {
+      const onPageConfirmation = () => {
         dialog.querySelector('#selected')!.innerHTML = `
           <div class="row"><div>HEMOGRAMA COMPLETO - 0202020380</div><button aria-label="Excluir"></button></div>`;
         dialog.querySelector<HTMLButtonElement>('.row button')!.addEventListener('click', () => {
           dialog.querySelector('.row')?.remove();
         });
         list.remove();
-      });
+        document.removeEventListener(PAGE_SELECT_EXAM_EVENT, onPageConfirmation);
+      };
+      document.addEventListener(PAGE_SELECT_EXAM_EVENT, onPageConfirmation);
       list.append(option);
       document.body.append(list);
     });

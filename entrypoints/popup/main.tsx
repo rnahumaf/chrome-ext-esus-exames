@@ -46,6 +46,11 @@ function App() {
       await browser.runtime.sendMessage<RuntimeMessage>({ type: 'ACTIVATE_ORIGIN', origin: activeOrigin });
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (tab?.id != null) {
+        await browser.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['/esus-page-bridge.js'],
+          world: 'MAIN',
+        });
         await browser.scripting.executeScript({ target: { tabId: tab.id }, files: ['/esus-injected.js'] });
       }
       setMessage('Extensão ativada neste domínio.');
