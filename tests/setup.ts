@@ -21,6 +21,7 @@ vi.mock('wxt/browser', () => ({
       getRegisteredContentScripts: vi.fn(async () => []),
       registerContentScripts: vi.fn(async () => undefined),
       unregisterContentScripts: vi.fn(async () => undefined),
+      updateContentScripts: vi.fn(async () => undefined),
     },
     permissions: {
       contains: vi.fn(async () => true),

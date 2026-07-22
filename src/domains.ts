@@ -3,6 +3,7 @@ import { getStore, isAllowedOrigin, updateStore } from './storage';
 
 const SCRIPT_PREFIX = 'esus_presets_';
 export const INJECTED_SCRIPT_FILE = 'esus-injected.js';
+const registrationTasks = new Map<string, Promise<void>>();
 
 export function originPattern(origin: string): string {
   if (!isAllowedOrigin(origin)) throw new Error('Origem HTTPS inválida.');
@@ -18,21 +19,34 @@ export function scriptIdForOrigin(origin: string): string {
   return `${SCRIPT_PREFIX}${(hash >>> 0).toString(36)}`;
 }
 
+async function withRegistrationLock(id: string, task: () => Promise<void>): Promise<void> {
+  const previous = registrationTasks.get(id) ?? Promise.resolve();
+  const current = previous.catch(() => undefined).then(task);
+  registrationTasks.set(id, current);
+  try {
+    await current;
+  } finally {
+    if (registrationTasks.get(id) === current) registrationTasks.delete(id);
+  }
+}
+
 export async function registerOrigin(origin: string): Promise<void> {
   const matches = [originPattern(origin)];
   const id = scriptIdForOrigin(origin);
-  const current = await browser.scripting.getRegisteredContentScripts({ ids: [id] });
-  if (current.length) await browser.scripting.unregisterContentScripts({ ids: [id] });
-  await browser.scripting.registerContentScripts([
-    {
-      id,
-      js: [INJECTED_SCRIPT_FILE],
-      matches,
-      runAt: 'document_idle',
-      persistAcrossSessions: true,
-      world: 'ISOLATED',
-    },
-  ]);
+  await withRegistrationLock(id, async () => {
+    const current = await browser.scripting.getRegisteredContentScripts({ ids: [id] });
+    if (current.length) return;
+    await browser.scripting.registerContentScripts([
+      {
+        id,
+        js: [INJECTED_SCRIPT_FILE],
+        matches,
+        runAt: 'document_idle',
+        persistAcrossSessions: true,
+        world: 'ISOLATED',
+      },
+    ]);
+  });
 }
 
 export async function activateOrigin(origin: string): Promise<void> {
@@ -45,8 +59,10 @@ export async function activateOrigin(origin: string): Promise<void> {
 
 export async function removeOrigin(origin: string): Promise<void> {
   const id = scriptIdForOrigin(origin);
-  const registered = await browser.scripting.getRegisteredContentScripts({ ids: [id] });
-  if (registered.length) await browser.scripting.unregisterContentScripts({ ids: [id] });
+  await withRegistrationLock(id, async () => {
+    const registered = await browser.scripting.getRegisteredContentScripts({ ids: [id] });
+    if (registered.length) await browser.scripting.unregisterContentScripts({ ids: [id] });
+  });
   await updateStore((store) => ({
     ...store,
     allowedOrigins: store.allowedOrigins.filter((item) => item !== origin),
