@@ -11,12 +11,17 @@ export const SIDEBAR_STYLES = `
   .preset-toggle:hover, .preset.open .preset-toggle { background: #e0f2f1; }
   button { font: inherit; }
   .icon-button { border: 0; background: transparent; color: #00695c; cursor: pointer; padding: 6px; }
-  .body { border-top: 1px solid #e3e9eb; padding: 8px; }
-  .exam { display: grid; grid-template-columns: 18px 1fr; gap: 6px; padding: 6px 0; border-bottom: 1px solid #eef2f3; }
+  .body { border-top: 1px solid #e3e9eb; padding: 6px 8px 8px; }
+  .exam { display: grid; grid-template-columns: 18px minmax(0, 1fr) 24px; align-items: center; gap: 5px; min-height: 30px; padding: 2px 0; border-bottom: 1px solid #eef2f3; }
   .exam:last-of-type { border-bottom: 0; }
-  .exam label { cursor: pointer; line-height: 1.25; }
-  .code { display: block; color: #607d8b; font-size: 10px; margin-top: 2px; }
-  .note { display: block; color: #546e7a; font-size: 10px; margin-top: 3px; }
+  .exam input { margin: 0; }
+  .exam label { min-width: 0; cursor: pointer; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .info-button { width: 20px; height: 20px; border: 1px solid #90a4ae; border-radius: 50%; background: white; color: #455a64; cursor: pointer; padding: 0; font-size: 11px; font-weight: 700; line-height: 18px; }
+  .info-button[aria-expanded=true] { background: #e0f2f1; border-color: #00796b; color: #00695c; }
+  .exam-details { grid-column: 2 / -1; display: grid; gap: 3px; margin: 1px 0 5px; padding: 6px 7px; border-radius: 4px; background: #f4f7f8; color: #455a64; font-size: 10px; line-height: 1.35; white-space: normal; }
+  .exam-details strong { color: #263238; font-weight: 600; }
+  .code { display: block; color: #607d8b; font-size: 10px; }
+  .note { display: block; color: #546e7a; font-size: 10px; }
   .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .primary, .secondary, .danger { border-radius: 4px; padding: 7px 9px; cursor: pointer; font-weight: 600; }
   .primary { border: 1px solid #00796b; background: #00796b; color: white; }

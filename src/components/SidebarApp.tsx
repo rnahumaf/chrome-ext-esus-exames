@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { addExam, applyItems, getSelectedExams, removeExam, selectedCodes } from '../domAdapter';
+import { examDisplayLabel } from '../examDisplay';
 import {
   dedupeItems,
   deletePreset,
@@ -42,6 +43,7 @@ export function SidebarApp({ dialog }: SidebarAppProps) {
   const [lastResults, setLastResults] = useState<ApplyResult[]>([]);
   const [editor, setEditor] = useState<EditorState>();
   const [confirmDelete, setConfirmDelete] = useState<string>();
+  const [detailsId, setDetailsId] = useState<string>();
   const controllerRef = useRef<AbortController | undefined>(undefined);
 
   const refreshStore = async () => setStore(await getStore());
@@ -78,7 +80,7 @@ export function SidebarApp({ dialog }: SidebarAppProps) {
     setLastResults([]);
     try {
       const results = await applyItems(dialog, items, controller.signal, (done, total, result) => {
-        setProgress(`${done}/${total}: ${result.item.label}`);
+        setProgress(`${done}/${total}: ${examDisplayLabel(result.item)}`);
       });
       setLastResults(results);
       setProgress(controller.signal.aborted ? 'Aplicação cancelada.' : resultMessage(results));
@@ -95,7 +97,7 @@ export function SidebarApp({ dialog }: SidebarAppProps) {
     const controller = new AbortController();
     controllerRef.current = controller;
     setBusy(true);
-    setProgress(`${checked ? 'Adicionando' : 'Removendo'} ${item.label}…`);
+    setProgress(`${checked ? 'Adicionando' : 'Removendo'} ${examDisplayLabel(item)}…`);
     const result = checked
       ? await addExam(dialog, item, controller.signal)
       : await removeExam(dialog, item, controller.signal);
@@ -157,42 +159,60 @@ export function SidebarApp({ dialog }: SidebarAppProps) {
         return (
           <section className={`preset ${open ? 'open' : ''}`} key={preset.id}>
             <div className="preset-head">
-              <button className="preset-toggle" onClick={() => setExpandedId(open ? undefined : preset.id)}>
+              <button type="button" className="preset-toggle" onClick={() => setExpandedId(open ? undefined : preset.id)}>
                 {preset.name}
               </button>
-              <button className="icon-button" title="Editar preset" onClick={() => openEditor(preset)}>Editar</button>
+              <button type="button" className="icon-button" title="Editar preset" onClick={() => openEditor(preset)}>Editar</button>
             </div>
             {open && (
               <div className="body">
-                {preset.items.map((item) => (
-                  <div className="exam" key={item.sigtapCode}>
-                    <input
-                      aria-label={item.label}
-                      type="checkbox"
-                      checked={codes.has(item.sigtapCode)}
-                      disabled={busy}
-                      onChange={(event) => void toggleItem(item, event.target.checked)}
-                    />
-                    <label>
-                      {item.label}
-                      <span className="code">SIGTAP {item.sigtapCode}</span>
-                      {item.note && <span className="note">{item.note}</span>}
-                    </label>
-                  </div>
-                ))}
+                {preset.items.map((item) => {
+                  const itemId = `${preset.id}-${item.sigtapCode}`;
+                  const detailsOpen = detailsId === itemId;
+                  return (
+                    <div className="exam" key={item.sigtapCode}>
+                      <input
+                        id={`exam-${itemId}`}
+                        aria-label={item.label}
+                        type="checkbox"
+                        checked={codes.has(item.sigtapCode)}
+                        disabled={busy}
+                        onChange={(event) => void toggleItem(item, event.target.checked)}
+                      />
+                      <label htmlFor={`exam-${itemId}`} title={item.label}>
+                        {examDisplayLabel(item)}
+                      </label>
+                      <button
+                        type="button"
+                        className="info-button"
+                        aria-label={`Informações sobre ${examDisplayLabel(item)}`}
+                        aria-expanded={detailsOpen}
+                        aria-controls={`details-${itemId}`}
+                        onClick={() => setDetailsId(detailsOpen ? undefined : itemId)}
+                      >i</button>
+                      {detailsOpen && (
+                        <div className="exam-details" id={`details-${itemId}`}>
+                          <strong>{item.label}</strong>
+                          <span className="code">SIGTAP {item.sigtapCode}</span>
+                          {item.note && <span className="note">{item.note}</span>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
                 {preset.source && (
                   <p className="hint">
                     Fonte: <a href={preset.source.url} target="_blank" rel="noreferrer">{preset.source.title}</a>
                   </p>
                 )}
                 <div className="actions">
-                  <button className="primary" disabled={busy} onClick={() => void runApply(preset.items)}>
+                  <button type="button" className="primary" disabled={busy} onClick={() => void runApply(preset.items)}>
                     Adicionar todos
                   </button>
-                  <button className="secondary" disabled={busy} onClick={() => void duplicate(preset)}>
+                  <button type="button" className="secondary" disabled={busy} onClick={() => void duplicate(preset)}>
                     Duplicar
                   </button>
-                  <button className="danger" disabled={busy} onClick={() => void removePreset(preset.id)}>
+                  <button type="button" className="danger" disabled={busy} onClick={() => void removePreset(preset.id)}>
                     {confirmDelete === preset.id ? 'Confirmar exclusão' : 'Excluir'}
                   </button>
                 </div>
@@ -203,18 +223,18 @@ export function SidebarApp({ dialog }: SidebarAppProps) {
       })}
 
       {!store?.presets.length && <p className="empty">Nenhum preset cadastrado.</p>}
-      <button className="secondary capture" disabled={busy} onClick={captureNew}>
+      <button type="button" className="secondary capture" disabled={busy} onClick={captureNew}>
         Salvar seleção atual como preset
       </button>
 
       {progress && <div className={`status ${failedItems.length ? 'error' : ''}`} role="status">{progress}</div>}
       {busy && (
-        <button className="danger capture" onClick={() => controllerRef.current?.abort()}>
+        <button type="button" className="danger capture" onClick={() => controllerRef.current?.abort()}>
           Cancelar aplicação
         </button>
       )}
       {!busy && failedItems.length > 0 && (
-        <button className="secondary capture" onClick={() => void runApply(failedItems)}>
+        <button type="button" className="secondary capture" onClick={() => void runApply(failedItems)}>
           Repetir somente falhas
         </button>
       )}
@@ -278,9 +298,10 @@ function PresetEditor({
             <div className="edit-title">
               <span>{item.label} <span className="code">{item.sigtapCode}</span></span>
               <span className="edit-controls">
-                <button className="icon-button" title="Mover para cima" onClick={() => move(index, -1)}>↑</button>
-                <button className="icon-button" title="Mover para baixo" onClick={() => move(index, 1)}>↓</button>
+                <button type="button" className="icon-button" title="Mover para cima" onClick={() => move(index, -1)}>↑</button>
+                <button type="button" className="icon-button" title="Mover para baixo" onClick={() => move(index, 1)}>↓</button>
                 <button
+                  type="button"
                   className="icon-button"
                   title="Remover do preset"
                   onClick={() => updatePreset({ items: state.preset.items.filter((_, itemIndex) => itemIndex !== index) })}
@@ -295,11 +316,11 @@ function PresetEditor({
         ))}
 
         <div className="actions">
-          <button className="secondary" onClick={mergeCurrent}>Mesclar seleção atual</button>
-          <button className="primary" disabled={!state.preset.name.trim() || !state.preset.items.length} onClick={onSave}>
+          <button type="button" className="secondary" onClick={mergeCurrent}>Mesclar seleção atual</button>
+          <button type="button" className="primary" disabled={!state.preset.name.trim() || !state.preset.items.length} onClick={onSave}>
             Salvar preset
           </button>
-          <button className="secondary" onClick={onCancel}>Cancelar</button>
+          <button type="button" className="secondary" onClick={onCancel}>Cancelar</button>
         </div>
       </div>
     </div>

@@ -9,6 +9,8 @@ Extensão Chrome Manifest V3 para criar e reutilizar grupos pessoais de exames n
 - captura a seleção atual do formulário como um novo preset;
 - permite editar, reordenar, mesclar, duplicar e excluir presets;
 - identifica exames pelo código SIGTAP e evita duplicatas;
+- mostra nomes compactos na lista, com código, nome oficial e notas disponíveis no botão de informações;
+- pesquisa pelo nome oficial e confirma automaticamente a opção correspondente ao código SIGTAP;
 - funciona em domínios e-SUS autorizados individualmente pelo usuário.
 
 A extensão **não** preenche justificativa, observações ou CID e **nunca** aciona o botão Salvar.

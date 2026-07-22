@@ -112,8 +112,38 @@ export async function waitFor<T>(
 function matchingOptions(code: string): HTMLElement[] {
   return Array.from(document.querySelectorAll<HTMLElement>('[role="option"]')).filter((option) => {
     const text = (option.textContent ?? '').replace(/\s+/g, ' ').trim();
-    return !/carregando/i.test(text) && text.match(CODE_PATTERN)?.[1] === code;
+    const listbox = option.closest<HTMLElement>('[role="listbox"]');
+    return (
+      option.isConnected &&
+      listbox?.getAttribute('aria-hidden') !== 'true' &&
+      !/carregando/i.test(text) &&
+      text.match(CODE_PATTERN)?.[1] === code
+    );
   });
+}
+
+function dispatchPrimaryPointer(target: HTMLElement): void {
+  const mouseOptions: MouseEventInit = {
+    bubbles: true,
+    cancelable: true,
+    composed: true,
+    button: 0,
+    buttons: 1,
+  };
+  const PointerEventConstructor = window.PointerEvent;
+  if (PointerEventConstructor) {
+    target.dispatchEvent(new PointerEventConstructor('pointerdown', { ...mouseOptions, pointerId: 1, isPrimary: true }));
+  }
+  target.dispatchEvent(new MouseEvent('mousedown', mouseOptions));
+  if (target.isConnected) {
+    if (PointerEventConstructor) {
+      target.dispatchEvent(
+        new PointerEventConstructor('pointerup', { ...mouseOptions, buttons: 0, pointerId: 1, isPrimary: true }),
+      );
+    }
+    target.dispatchEvent(new MouseEvent('mouseup', { ...mouseOptions, buttons: 0 }));
+    target.dispatchEvent(new MouseEvent('click', { ...mouseOptions, buttons: 0 }));
+  }
 }
 
 async function findOption(
@@ -148,21 +178,24 @@ export async function addExam(
   if (selectedCodes(dialog).has(item.sigtapCode)) return { item, status: 'existing' };
   let option: HTMLElement;
   try {
-    option = await findOption(dialog, item, item.sigtapCode, signal);
-  } catch (codeError) {
-    if (signal?.aborted) throw codeError;
+    // O catálogo de Jaguariúna não filtra códigos SIGTAP e devolve os 50
+    // primeiros itens. O nome oficial chega direto à opção correta; o código
+    // continua sendo a confirmação autoritativa do resultado.
+    option = await findOption(dialog, item, item.label, signal);
+  } catch (labelError) {
+    if (signal?.aborted) throw labelError;
     try {
-      option = await findOption(dialog, item, item.label, signal);
-    } catch (labelError) {
+      option = await findOption(dialog, item, item.sigtapCode, signal);
+    } catch (codeError) {
       return {
         item,
         status: 'failed',
-        reason: labelError instanceof Error ? labelError.message : 'Exame não encontrado.',
+        reason: codeError instanceof Error ? codeError.message : 'Exame não encontrado.',
       };
     }
   }
 
-  option.click();
+  dispatchPrimaryPointer(option);
   try {
     await waitFor(() => selectedCodes(dialog).has(item.sigtapCode), 4_500, signal);
     return { item, status: 'added' };

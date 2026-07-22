@@ -59,7 +59,7 @@ describe('adaptador semântico do e-SUS', () => {
       const option = document.createElement('div');
       option.setAttribute('role', 'option');
       option.textContent = 'Hemograma completo Código 0202020380';
-      option.addEventListener('click', () => {
+      option.addEventListener('mousedown', () => {
         dialog.querySelector('#selected')!.innerHTML = `
           <div class="row"><div>HEMOGRAMA COMPLETO - 0202020380</div><button aria-label="Excluir"></button></div>`;
         dialog.querySelector<HTMLButtonElement>('.row button')!.addEventListener('click', () => {
@@ -73,6 +73,7 @@ describe('adaptador semântico do e-SUS', () => {
 
     const item = { sigtapCode: '0202020380', label: 'Hemograma completo' };
     await expect(addExam(dialog, item)).resolves.toMatchObject({ status: 'added' });
+    expect(input.value).toBe('Hemograma completo');
     expect(getSelectedExams(dialog)).toHaveLength(1);
     await expect(removeExam(dialog, item)).resolves.toMatchObject({ status: 'removed' });
     expect(getSelectedExams(dialog)).toHaveLength(0);
