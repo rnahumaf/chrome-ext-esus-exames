@@ -26,4 +26,3 @@ export function installPageBridge(): () => void {
   document.addEventListener(PAGE_SELECT_EXAM_EVENT, listener);
   return () => document.removeEventListener(PAGE_SELECT_EXAM_EVENT, listener);
 }
-
