@@ -6,7 +6,7 @@ export const STORE_KEY = 'extensionStore';
 
 export function createDefaultStore(): ExtensionStore {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     seedsInitialized: true,
     presets: cloneSeedPresets(),
     allowedOrigins: [],
@@ -25,20 +25,66 @@ function isPreset(value: unknown): value is ExamPreset {
         item &&
         typeof item.sigtapCode === 'string' &&
         /^\d{10}$/.test(item.sigtapCode) &&
-        typeof item.label === 'string',
+        typeof item.label === 'string' &&
+        (item.searchTerms === undefined ||
+          (Array.isArray(item.searchTerms) && item.searchTerms.every((term) => typeof term === 'string'))),
     )
   );
+}
+
+function migrateLegacySerologies(presets: ExamPreset[]): ExamPreset[] {
+  const current = cloneSeedPresets().find((preset) => preset.id === 'seed-serologies');
+  if (!current) return presets;
+
+  const replacements = new Map([
+    ['0202030300', current.items[0]],
+    ['0202031110', current.items[1]],
+    ['0202030970', current.items[2]],
+    ['0202030679', current.items[3]],
+  ]);
+
+  return presets.map((preset) => {
+    if (preset.id !== 'seed-serologies') return preset;
+    return {
+      ...preset,
+      items: preset.items.map((item) => {
+        const replacement = replacements.get(item.sigtapCode);
+        return replacement
+          ? {
+              ...item,
+              sigtapCode: replacement.sigtapCode,
+              label: replacement.label,
+              searchTerms: replacement.searchTerms,
+            }
+          : item;
+      }),
+      updatedAt: new Date().toISOString(),
+    };
+  });
 }
 
 export function normalizeStore(raw: unknown): ExtensionStore {
   if (!raw || typeof raw !== 'object') return createDefaultStore();
   const value = raw as Partial<ExtensionStore>;
+  const schemaVersion = (raw as { schemaVersion?: number }).schemaVersion;
   const presets = Array.isArray(value.presets) ? value.presets.filter(isPreset) : [];
   const allowedOrigins = Array.isArray(value.allowedOrigins)
     ? [...new Set(value.allowedOrigins.filter((origin): origin is string => isAllowedOrigin(origin)))]
     : [];
 
-  if (value.schemaVersion !== 1) {
+  if (schemaVersion === 1) {
+    return {
+      schemaVersion: 2,
+      seedsInitialized: value.seedsInitialized !== false,
+      presets:
+        value.seedsInitialized === false && presets.length === 0
+          ? cloneSeedPresets()
+          : migrateLegacySerologies(presets),
+      allowedOrigins,
+    };
+  }
+
+  if (schemaVersion !== 2) {
     return {
       ...createDefaultStore(),
       presets: presets.length ? presets : cloneSeedPresets(),
@@ -47,7 +93,7 @@ export function normalizeStore(raw: unknown): ExtensionStore {
   }
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     seedsInitialized: value.seedsInitialized !== false,
     presets: value.seedsInitialized === false && presets.length === 0 ? cloneSeedPresets() : presets,
     allowedOrigins,

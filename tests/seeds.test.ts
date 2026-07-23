@@ -19,4 +19,14 @@ describe('presets iniciais', () => {
       expect.arrayContaining(['0202010295', '0202010279', '0202010287', '0202010643', '0202010651']),
     );
   });
+
+  it('usa os procedimentos atuais de sorologia para população geral', () => {
+    const serologies = SEED_PRESETS.find((preset) => preset.id === 'seed-serologies')!;
+    expect(serologies.items.map(({ sigtapCode, searchTerms }) => ({ sigtapCode, searchTerms }))).toEqual([
+      { sigtapCode: '0202031500', searchTerms: ['HIV'] },
+      { sigtapCode: '0202031110', searchTerms: ['VDRL'] },
+      { sigtapCode: '0202031446', searchTerms: ['HBsAg'] },
+      { sigtapCode: '0202031470', searchTerms: ['anti-HCV'] },
+    ]);
+  });
 });

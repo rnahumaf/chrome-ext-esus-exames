@@ -1,6 +1,6 @@
 import type { ExamPreset } from './types';
 
-const REVIEWED_AT = '2026-07-21';
+const REVIEWED_AT = '2026-07-22';
 const CREATED_AT = '2026-07-21T00:00:00.000Z';
 
 export const SEED_PRESETS: ExamPreset[] = [
@@ -80,10 +80,27 @@ export const SEED_PRESETS: ExamPreset[] = [
     createdAt: CREATED_AT,
     updatedAt: CREATED_AT,
     items: [
-      { sigtapCode: '0202030300', label: 'Pesquisa de anticorpos anti-HIV-1 + HIV-2 (ELISA)' },
-      { sigtapCode: '0202031110', label: 'Teste não treponemico p/ detecção de sifilis', note: 'Inclui VDRL, RPR, TRUST ou USR.' },
-      { sigtapCode: '0202030970', label: 'Pesquisa de antigeno de superficie do virus da hepatite B (HBsAg)' },
-      { sigtapCode: '0202030679', label: 'Pesquisa de anticorpos contra o virus da hepatite C (anti-HCV)' },
+      {
+        sigtapCode: '0202031500',
+        label: 'Pesquisa laboratorial de antígenos de HIV e/ou anticorpos ANTI-HIV-1 ou anti-hiv-2 para população geral (exceto gestante, parceiro ou parceria)',
+        searchTerms: ['HIV'],
+      },
+      {
+        sigtapCode: '0202031110',
+        label: 'Teste não treponemico p/ detecção de sifilis para população geral (exceto gestante, parceiro ou parceria)',
+        searchTerms: ['VDRL'],
+        note: 'Inclui VDRL, RPR, TRUST ou USR.',
+      },
+      {
+        sigtapCode: '0202031446',
+        label: 'Pesquisa laboratorial de antígeno de superfície do vírus da hepatite b (hbsag) para população geral (exceto gestante, parceiro ou parceria)',
+        searchTerms: ['HBsAg'],
+      },
+      {
+        sigtapCode: '0202031470',
+        label: 'Pesquisa laboratorial de anticorpos contra o vírus da hepatite c (anti-hcv) para população geral (exceto gestante, parceiro ou parceria)',
+        searchTerms: ['anti-HCV'],
+      },
     ],
   },
   {

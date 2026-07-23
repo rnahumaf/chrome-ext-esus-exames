@@ -7,6 +7,7 @@ export interface ClinicalSource {
 export interface ExamItem {
   sigtapCode: string;
   label: string;
+  searchTerms?: string[];
   note?: string;
 }
 
@@ -21,7 +22,7 @@ export interface ExamPreset {
 }
 
 export interface ExtensionStore {
-  schemaVersion: 1;
+  schemaVersion: 2;
   seedsInitialized: boolean;
   presets: ExamPreset[];
   allowedOrigins: string[];

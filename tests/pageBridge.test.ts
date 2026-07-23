@@ -19,6 +19,24 @@ describe('ponte mínima com o mundo da página', () => {
     uninstall();
   });
 
+  it('invoca diretamente os manipuladores React quando disponíveis', () => {
+    document.body.innerHTML = `
+      <ul role="listbox">
+        <li role="option">VDRL Código 0202031110</li>
+      </ul>`;
+    const target = document.querySelector<HTMLElement>('[role="option"]')!;
+    const onMouseDown = vi.fn();
+    const onClick = vi.fn();
+    Object.defineProperty(target, '__reactProps$test', { value: { onMouseDown, onClick }, enumerable: true });
+    const nativeClick = vi.spyOn(target, 'click');
+
+    expect(clickVisibleOptionByCode('0202031110')).toBe(true);
+
+    expect(onMouseDown).toHaveBeenCalledOnce();
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(nativeClick).not.toHaveBeenCalled();
+  });
+
   it('recusa códigos inválidos ou opções ambíguas', () => {
     document.body.innerHTML = `
       <ul role="listbox">

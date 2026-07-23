@@ -82,4 +82,46 @@ describe('adaptador semântico do e-SUS', () => {
     expect(getSelectedExams(dialog)).toHaveLength(0);
     expect(saveClicks).toBe(0);
   });
+
+  it('usa termo aceito e confirma uma opção estável após a lista ser substituída', async () => {
+    const dialog = fixture();
+    const input = dialog.querySelector<HTMLInputElement>('input[name="exame"]')!;
+    input.setAttribute('aria-controls', 'exam-menu');
+
+    input.addEventListener('input', () => {
+      document.querySelector('#exam-menu')?.remove();
+      if (input.value !== 'VDRL') return;
+
+      const render = (confirmable: boolean) => {
+        document.querySelector('#exam-menu')?.remove();
+        const list = document.createElement('div');
+        list.id = 'exam-menu';
+        list.setAttribute('role', 'listbox');
+        const option = document.createElement('div');
+        option.setAttribute('role', 'option');
+        option.textContent = 'Teste não treponemico para população geral Código 0202031110';
+        list.append(option);
+        document.body.append(list);
+        if (confirmable) {
+          const onPageConfirmation = () => {
+            dialog.querySelector('#selected')!.innerHTML = `
+              <div>TESTE NÃO TREPONEMICO PARA POPULAÇÃO GERAL - 0202031110</div>`;
+            document.removeEventListener(PAGE_SELECT_EXAM_EVENT, onPageConfirmation);
+          };
+          document.addEventListener(PAGE_SELECT_EXAM_EVENT, onPageConfirmation);
+        }
+      };
+
+      render(false);
+      queueMicrotask(() => render(true));
+    });
+
+    const item = {
+      sigtapCode: '0202031110',
+      label: 'Teste não treponemico para população geral',
+      searchTerms: ['VDRL'],
+    };
+    await expect(addExam(dialog, item)).resolves.toMatchObject({ status: 'added' });
+    expect(input.value).toBe('VDRL');
+  });
 });

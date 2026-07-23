@@ -110,8 +110,10 @@ export async function waitFor<T>(
   });
 }
 
-function matchingOptions(code: string): HTMLElement[] {
-  return Array.from(document.querySelectorAll<HTMLElement>('[role="option"]')).filter((option) => {
+function matchingOptions(input: HTMLInputElement, code: string): HTMLElement[] {
+  const menuId = input.getAttribute('aria-controls');
+  const root = (menuId && document.getElementById(menuId)) || document;
+  return Array.from(root.querySelectorAll<HTMLElement>('[role="option"]')).filter((option) => {
     const text = (option.textContent ?? '').replace(/\s+/g, ' ').trim();
     const listbox = option.closest<HTMLElement>('[role="listbox"]');
     return (
@@ -121,6 +123,33 @@ function matchingOptions(code: string): HTMLElement[] {
       text.match(CODE_PATTERN)?.[1] === code
     );
   });
+}
+
+async function stableMatchingOption(
+  input: HTMLInputElement,
+  code: string,
+  signal?: AbortSignal,
+): Promise<HTMLElement> {
+  let candidate: HTMLElement | undefined;
+  let stableSince = 0;
+  return waitFor(
+    () => {
+      const matches = matchingOptions(input, code);
+      if (matches.length !== 1) {
+        candidate = undefined;
+        stableSince = 0;
+        return undefined;
+      }
+      if (matches[0] !== candidate || !matches[0].isConnected) {
+        candidate = matches[0];
+        stableSince = Date.now();
+        return undefined;
+      }
+      return Date.now() - stableSince >= 150 ? candidate : undefined;
+    },
+    4_500,
+    signal,
+  );
 }
 
 function dispatchPrimaryPointer(target: HTMLElement): void {
@@ -149,9 +178,7 @@ function dispatchPrimaryPointer(target: HTMLElement): void {
 
 function confirmOptionInPageWorld(option: HTMLElement, code: string): void {
   dispatchPrimaryPointer(option);
-  if (option.isConnected) {
-    document.dispatchEvent(new CustomEvent(PAGE_SELECT_EXAM_EVENT, { detail: code }));
-  }
+  document.dispatchEvent(new CustomEvent(PAGE_SELECT_EXAM_EVENT, { detail: code }));
 }
 
 async function findOption(
@@ -166,16 +193,7 @@ async function findOption(
   input.click();
   setReactInputValue(input, query);
 
-  const matches = await waitFor(
-    () => {
-      const options = matchingOptions(item.sigtapCode);
-      return options.length ? options : undefined;
-    },
-    4_500,
-    signal,
-  );
-  if (matches.length !== 1) throw new Error(`Código ${item.sigtapCode} retornou ${matches.length} opções.`);
-  return matches[0];
+  return stableMatchingOption(input, item.sigtapCode, signal);
 }
 
 export async function addExam(
@@ -184,23 +202,24 @@ export async function addExam(
   signal?: AbortSignal,
 ): Promise<ApplyResult> {
   if (selectedCodes(dialog).has(item.sigtapCode)) return { item, status: 'existing' };
-  let option: HTMLElement;
-  try {
-    // O catálogo de Jaguariúna não filtra códigos SIGTAP e devolve os 50
-    // primeiros itens. O nome oficial chega direto à opção correta; o código
-    // continua sendo a confirmação autoritativa do resultado.
-    option = await findOption(dialog, item, item.label, signal);
-  } catch (labelError) {
-    if (signal?.aborted) throw labelError;
+  const queries = [...new Set([...(item.searchTerms ?? []), item.label, item.sigtapCode].filter(Boolean))];
+  let option: HTMLElement | undefined;
+  let lastError: unknown;
+  for (const query of queries) {
     try {
-      option = await findOption(dialog, item, item.sigtapCode, signal);
-    } catch (codeError) {
-      return {
-        item,
-        status: 'failed',
-        reason: codeError instanceof Error ? codeError.message : 'Exame não encontrado.',
-      };
+      option = await findOption(dialog, item, query, signal);
+      break;
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      lastError = error;
     }
+  }
+  if (!option) {
+    return {
+      item,
+      status: 'failed',
+      reason: lastError instanceof Error ? lastError.message : 'Exame não encontrado.',
+    };
   }
 
   confirmOptionInPageWorld(option, item.sigtapCode);
