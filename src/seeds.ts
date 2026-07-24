@@ -1,6 +1,6 @@
 import type { ExamPreset } from './types';
 
-const REVIEWED_AT = '2026-07-22';
+const REVIEWED_AT = '2026-07-23';
 const CREATED_AT = '2026-07-21T00:00:00.000Z';
 
 export const SEED_PRESETS: ExamPreset[] = [
@@ -75,7 +75,7 @@ export const SEED_PRESETS: ExamPreset[] = [
   },
   {
     id: 'seed-serologies',
-    name: 'Sorologias',
+    name: 'Infecto',
     origin: 'seed',
     createdAt: CREATED_AT,
     updatedAt: CREATED_AT,
@@ -101,24 +101,125 @@ export const SEED_PRESETS: ExamPreset[] = [
         label: 'Pesquisa laboratorial de anticorpos contra o vírus da hepatite c (anti-hcv) para população geral (exceto gestante, parceiro ou parceria)',
         searchTerms: ['anti-HCV'],
       },
-    ],
-  },
-  {
-    id: 'seed-tuberculosis',
-    name: 'Investigação de tuberculose',
-    origin: 'seed',
-    createdAt: CREATED_AT,
-    updatedAt: CREATED_AT,
-    source: {
-      title: 'Ministério da Saúde — Tuberculose',
-      url: 'https://www.gov.br/saude/pt-br/assuntos/saude-de-a-a-z/t/tuberculose',
-      reviewedAt: REVIEWED_AT,
-    },
-    items: [
       {
         sigtapCode: '0202080048',
         label: 'Baciloscopia direta p/ BAAR tuberculose (diagnóstica)',
+        searchTerms: ['BAAR'],
         note: 'Investigar tosse por 3 semanas ou mais; considerar critérios específicos em populações especiais.',
+      },
+      {
+        sigtapCode: '0202030857',
+        label: 'Pesquisa de anticorpos IgM anticitomegalovirus',
+        searchTerms: ['citomegalovirus'],
+      },
+      {
+        sigtapCode: '0202030741',
+        label: 'Pesquisa de anticorpos IgG anticitomegalovirus',
+        searchTerms: ['citomegalovirus'],
+      },
+      {
+        sigtapCode: '0202030946',
+        label: 'Pesquisa de anticorpos IgM contra o virus epstein-barr',
+        searchTerms: ['epstein barr'],
+      },
+      {
+        sigtapCode: '0202030830',
+        label: 'Pesquisa de anticorpos IgG contra o virus epstein-barr',
+        searchTerms: ['epstein barr'],
+      },
+      {
+        sigtapCode: '0202030881',
+        label: 'Pesquisa de anticorpos IgM antitrypanosoma cruzi',
+        searchTerms: ['trypanosoma'],
+      },
+      {
+        sigtapCode: '0202030776',
+        label: 'Pesquisa de anticorpos IgG antitrypanosoma cruzi',
+        searchTerms: ['trypanosoma'],
+      },
+      {
+        sigtapCode: '0202030873',
+        label: 'Pesquisa de anticorpos IgM antitoxoplasma',
+        searchTerms: ['toxoplasma'],
+      },
+      {
+        sigtapCode: '0202030768',
+        label: 'Pesquisa de anticorpos IgG antitoxoplasma',
+        searchTerms: ['toxoplasma'],
+      },
+      {
+        sigtapCode: '0202030954',
+        label: 'Pesquisa de anticorpos IgM contra o virus herpes simples',
+        searchTerms: ['herpes'],
+      },
+      {
+        sigtapCode: '0202030849',
+        label: 'Pesquisa de anticorpos IgG contra o virus herpes simples',
+        searchTerms: ['herpes'],
+      },
+    ],
+  },
+  {
+    id: 'seed-hepatogram',
+    name: 'Hepatograma',
+    origin: 'seed',
+    createdAt: CREATED_AT,
+    updatedAt: CREATED_AT,
+    items: [
+      {
+        sigtapCode: '0202010643',
+        label: 'Dosagem de transaminase glutamico-oxalacetica (TGO)',
+        searchTerms: ['transaminase glutamico-oxalacetica'],
+      },
+      {
+        sigtapCode: '0202010651',
+        label: 'Dosagem de transaminase glutamico-piruvica (TGP)',
+        searchTerms: ['transaminase glutamico-piruvica'],
+      },
+      {
+        sigtapCode: '0202020029',
+        label: 'Contagem de plaquetas',
+        searchTerms: ['plaquetas'],
+      },
+      {
+        sigtapCode: '0202010627',
+        label: 'Dosagem de proteinas totais e fracoes',
+        searchTerms: ['proteinas totais'],
+      },
+      {
+        sigtapCode: '0202010635',
+        label: 'Dosagem de sodio',
+        searchTerms: ['sodio'],
+      },
+      {
+        sigtapCode: '0202010201',
+        label: 'Dosagem de bilirrubina total e fracoes',
+        searchTerms: ['bilirrubina'],
+      },
+      {
+        sigtapCode: '0202020142',
+        label: 'Determinação de tempo e atividade da protrombina (TAP)',
+        searchTerms: ['TAP'],
+      },
+      {
+        sigtapCode: '0202010317',
+        label: 'Dosagem de creatinina',
+        searchTerms: ['creatinina'],
+      },
+      {
+        sigtapCode: '0202030091',
+        label: 'Dosagem de alfa-fetoproteina',
+        searchTerms: ['alfa-fetoproteina'],
+      },
+      {
+        sigtapCode: '0202030580',
+        label: 'Pesquisa de anticorpos antimusculo liso',
+        searchTerms: ['musculo liso'],
+      },
+      {
+        sigtapCode: '0202030555',
+        label: 'Pesquisa de anticorpos antimicrossomas',
+        searchTerms: ['microssoma'],
       },
     ],
   },

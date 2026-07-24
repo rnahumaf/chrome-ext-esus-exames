@@ -6,7 +6,7 @@ export const STORE_KEY = 'extensionStore';
 
 export function createDefaultStore(): ExtensionStore {
   return {
-    schemaVersion: 2,
+    schemaVersion: 4,
     seedsInitialized: true,
     presets: cloneSeedPresets(),
     allowedOrigins: [],
@@ -36,11 +36,12 @@ function migrateLegacySerologies(presets: ExamPreset[]): ExamPreset[] {
   const current = cloneSeedPresets().find((preset) => preset.id === 'seed-serologies');
   if (!current) return presets;
 
-  const replacements = new Map([
-    ['0202030300', current.items[0]],
-    ['0202031110', current.items[1]],
-    ['0202030970', current.items[2]],
-    ['0202030679', current.items[3]],
+  const currentItems = new Map(current.items.map((item) => [item.sigtapCode, item]));
+  const replacementCodes = new Map([
+    ['0202030300', '0202031500'],
+    ['0202031110', '0202031110'],
+    ['0202030970', '0202031446'],
+    ['0202030679', '0202031470'],
   ]);
 
   return presets.map((preset) => {
@@ -48,7 +49,8 @@ function migrateLegacySerologies(presets: ExamPreset[]): ExamPreset[] {
     return {
       ...preset,
       items: preset.items.map((item) => {
-        const replacement = replacements.get(item.sigtapCode);
+        const replacementCode = replacementCodes.get(item.sigtapCode);
+        const replacement = replacementCode ? currentItems.get(replacementCode) : undefined;
         return replacement
           ? {
               ...item,
@@ -63,6 +65,75 @@ function migrateLegacySerologies(presets: ExamPreset[]): ExamPreset[] {
   });
 }
 
+function mergeRequiredItems(
+  requiredItems: ExamPreset['items'],
+  existingItems: ExamPreset['items'],
+): ExamPreset['items'] {
+  const existingByCode = new Map(existingItems.map((item) => [item.sigtapCode, item]));
+  const requiredCodes = new Set(requiredItems.map((item) => item.sigtapCode));
+  const required = requiredItems.map((item) => {
+    const existing = existingByCode.get(item.sigtapCode);
+    return existing?.note === undefined ? { ...item } : { ...item, note: existing.note };
+  });
+  const personal = dedupeItems(existingItems).filter((item) => !requiredCodes.has(item.sigtapCode));
+  return [...required, ...personal];
+}
+
+function migratePresetOrganization(presets: ExamPreset[]): ExamPreset[] {
+  if (!presets.length) return presets;
+
+  const seeds = cloneSeedPresets();
+  const infectoSeed = seeds.find((preset) => preset.id === 'seed-serologies');
+  const hepatogramSeed = seeds.find((preset) => preset.id === 'seed-hepatogram');
+  if (!infectoSeed || !hepatogramSeed) return presets;
+
+  const infectoExisting = presets.find((preset) => preset.id === 'seed-serologies');
+  const tuberculosisExisting = presets.find((preset) => preset.id === 'seed-tuberculosis');
+  const hepatogramExisting = presets.find((preset) => preset.id === 'seed-hepatogram');
+  const updatedAt = new Date().toISOString();
+
+  const infecto: ExamPreset = {
+    ...(infectoExisting ?? infectoSeed),
+    name:
+      !infectoExisting || infectoExisting.name === 'Sorologias'
+        ? infectoSeed.name
+        : infectoExisting.name,
+    items: mergeRequiredItems(infectoSeed.items, [
+      ...(infectoExisting?.items ?? []),
+      ...(tuberculosisExisting?.items ?? []),
+    ]),
+    updatedAt,
+  };
+  const hepatogram: ExamPreset = {
+    ...(hepatogramExisting ?? hepatogramSeed),
+    items: mergeRequiredItems(hepatogramSeed.items, hepatogramExisting?.items ?? []),
+    updatedAt,
+  };
+
+  const migrated: ExamPreset[] = [];
+  let infectoInserted = false;
+  let hepatogramInserted = false;
+  for (const preset of presets) {
+    if (preset.id === 'seed-serologies') {
+      migrated.push(infecto);
+      infectoInserted = true;
+    } else if (preset.id === 'seed-tuberculosis') {
+      if (!infectoInserted) {
+        migrated.push(infecto);
+        infectoInserted = true;
+      }
+    } else if (preset.id === 'seed-hepatogram') {
+      migrated.push(hepatogram);
+      hepatogramInserted = true;
+    } else {
+      migrated.push(preset);
+    }
+  }
+  if (!infectoInserted) migrated.push(infecto);
+  if (!hepatogramInserted) migrated.push(hepatogram);
+  return migrated;
+}
+
 export function normalizeStore(raw: unknown): ExtensionStore {
   if (!raw || typeof raw !== 'object') return createDefaultStore();
   const value = raw as Partial<ExtensionStore>;
@@ -72,28 +143,41 @@ export function normalizeStore(raw: unknown): ExtensionStore {
     ? [...new Set(value.allowedOrigins.filter((origin): origin is string => isAllowedOrigin(origin)))]
     : [];
 
-  if (schemaVersion === 1) {
+  if (schemaVersion === 1 || schemaVersion === 2) {
+    const migratedPresets = migrateLegacySerologies(presets);
     return {
-      schemaVersion: 2,
+      schemaVersion: 4,
       seedsInitialized: value.seedsInitialized !== false,
       presets:
-        value.seedsInitialized === false && presets.length === 0
+        migratedPresets.length === 0
           ? cloneSeedPresets()
-          : migrateLegacySerologies(presets),
+          : migratePresetOrganization(migratedPresets),
       allowedOrigins,
     };
   }
 
-  if (schemaVersion !== 2) {
+  if (schemaVersion === 3) {
+    return {
+      schemaVersion: 4,
+      seedsInitialized: value.seedsInitialized !== false,
+      presets:
+        value.seedsInitialized === false && presets.length === 0
+          ? cloneSeedPresets()
+          : migratePresetOrganization(presets),
+      allowedOrigins,
+    };
+  }
+
+  if (schemaVersion !== 4) {
     return {
       ...createDefaultStore(),
-      presets: presets.length ? presets : cloneSeedPresets(),
+      presets: presets.length ? migratePresetOrganization(presets) : cloneSeedPresets(),
       allowedOrigins,
     };
   }
 
   return {
-    schemaVersion: 2,
+    schemaVersion: 4,
     seedsInitialized: value.seedsInitialized !== false,
     presets: value.seedsInitialized === false && presets.length === 0 ? cloneSeedPresets() : presets,
     allowedOrigins,

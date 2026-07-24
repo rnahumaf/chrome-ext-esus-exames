@@ -20,13 +20,43 @@ describe('presets iniciais', () => {
     );
   });
 
-  it('usa os procedimentos atuais de sorologia para população geral', () => {
-    const serologies = SEED_PRESETS.find((preset) => preset.id === 'seed-serologies')!;
-    expect(serologies.items.map(({ sigtapCode, searchTerms }) => ({ sigtapCode, searchTerms }))).toEqual([
-      { sigtapCode: '0202031500', searchTerms: ['HIV'] },
-      { sigtapCode: '0202031110', searchTerms: ['VDRL'] },
-      { sigtapCode: '0202031446', searchTerms: ['HBsAg'] },
-      { sigtapCode: '0202031470', searchTerms: ['anti-HCV'] },
+  it('reúne sorologias e BAAR no grupo Infecto', () => {
+    const infecto = SEED_PRESETS.find((preset) => preset.id === 'seed-serologies')!;
+    expect(infecto.name).toBe('Infecto');
+    expect(infecto.items.map(({ sigtapCode }) => sigtapCode)).toEqual([
+      '0202031500',
+      '0202031110',
+      '0202031446',
+      '0202031470',
+      '0202080048',
+      '0202030857',
+      '0202030741',
+      '0202030946',
+      '0202030830',
+      '0202030881',
+      '0202030776',
+      '0202030873',
+      '0202030768',
+      '0202030954',
+      '0202030849',
+    ]);
+    expect(SEED_PRESETS.some((preset) => preset.id === 'seed-tuberculosis')).toBe(false);
+  });
+
+  it('cria o hepatograma com os onze procedimentos solicitados', () => {
+    const hepatogram = SEED_PRESETS.find((preset) => preset.id === 'seed-hepatogram')!;
+    expect(hepatogram.items.map(({ sigtapCode }) => sigtapCode)).toEqual([
+      '0202010643',
+      '0202010651',
+      '0202020029',
+      '0202010627',
+      '0202010635',
+      '0202010201',
+      '0202020142',
+      '0202010317',
+      '0202030091',
+      '0202030580',
+      '0202030555',
     ]);
   });
 });

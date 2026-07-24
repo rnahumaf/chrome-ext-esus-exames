@@ -22,7 +22,7 @@ export interface ExamPreset {
 }
 
 export interface ExtensionStore {
-  schemaVersion: 2;
+  schemaVersion: 4;
   seedsInitialized: boolean;
   presets: ExamPreset[];
   allowedOrigins: string[];

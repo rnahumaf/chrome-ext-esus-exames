@@ -5,7 +5,7 @@ Extensão Chrome Manifest V3 para criar e reutilizar grupos pessoais de exames n
 ## O que ela faz
 
 - adiciona grupos pessoais ao lado dos grupos nativos do e-SUS;
-- inclui quatro presets iniciais editáveis: Rastreios USPSTF, Hiperdia e alto custo, Sorologias e Investigação de tuberculose;
+- inclui quatro presets iniciais editáveis: Rastreios USPSTF, Hiperdia e alto custo, Infecto e Hepatograma;
 - captura a seleção atual do formulário como um novo preset;
 - permite editar, reordenar, mesclar, duplicar e excluir presets;
 - identifica exames pelo código SIGTAP e evita duplicatas;
@@ -72,6 +72,8 @@ As faixas e observações dos presets iniciais são notas informativas. Elas nã
 ## Compatibilidade
 
 A versão inicial foi validada contra a tela React de solicitação de exame comum do e-SUS APS utilizada em Jaguariúna. Quando os elementos semânticos esperados não são encontrados, a extensão interrompe a integração em vez de tentar seletores posicionais.
+
+Na atualização do armazenamento para a versão 4, o grupo padrão Sorologias passa a se chamar Infecto, recebe o BAAR antes separado em Investigação de tuberculose e incorpora as novas sorologias. A migração preserva notas e exames pessoais adicionados aos grupos. O grupo Hepatograma é incluído com os códigos e termos de busca conferidos no catálogo exibido pelo PEC de Jaguariúna em 23/07/2026.
 
 ## Licença
 
